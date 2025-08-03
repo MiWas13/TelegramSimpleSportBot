@@ -1,6 +1,7 @@
 import { Telegraf, Context } from 'telegraf';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import { t, Language } from './locales';
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +18,7 @@ interface BotContext extends Context {
     id: string;
     telegramId: string;
     name?: string;
+    language: Language;
   };
   session?: {
     selectedWorkoutType?: string;
@@ -49,7 +51,8 @@ bot.use(async (ctx: BotContext, next) => {
     ctx.user = {
       id: user.id,
       telegramId: user.telegramId,
-      name: user.name || undefined
+      name: user.name || undefined,
+      language: user.language as Language
     };
     
     // Get session
@@ -62,49 +65,107 @@ bot.use(async (ctx: BotContext, next) => {
 
 // Start command
 bot.start(async (ctx: BotContext) => {
-  const welcomeMessage = `
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  // If user hasn't set language yet, show language selection
+  if (!ctx.user.language || ctx.user.language === 'en') {
+    const welcomeMessage = `
 🏃‍♂️ Welcome to Sport Tracker Bot!
 
-Track your workouts easily with inline buttons. Here's what you can do:
-
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-❓ /help - Show this help message
-
-Let's get started! Use the "Add Workout" button below to record your first workout.
+Track your workouts easily with inline buttons. Choose your language:
   `;
-  
-  await ctx.reply(welcomeMessage.trim(), {
+    
+    await ctx.reply(welcomeMessage.trim(), {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+          [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
+        ]
+      }
+    });
+  } else {
+    // User has language set, show normal welcome
+    await showHome(ctx);
+  }
+});
+
+// Language command
+bot.command('language', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  await ctx.reply(t(ctx.user.language, 'language.selectLanguage'), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+        [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
       ]
     }
   });
 });
 
+// Language selection handlers
+bot.action('language_en', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: ctx.user.id },
+      data: { language: 'en' }
+    });
+
+    ctx.user.language = 'en';
+    await ctx.editMessageText(t('en', 'language.changed'));
+    await showHome(ctx);
+  } catch (error) {
+    console.error('Error updating language:', error);
+    await ctx.reply('❌ Error updating language. Please try again.');
+  }
+});
+
+bot.action('language_ru', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: ctx.user.id },
+      data: { language: 'ru' }
+    });
+
+    ctx.user.language = 'ru';
+    await ctx.editMessageText(t('ru', 'language.changed'));
+    await showHome(ctx);
+  } catch (error) {
+    console.error('Error updating language:', error);
+    await ctx.reply('❌ Error updating language. Please try again.');
+  }
+});
+
 // Help command
 bot.command('help', async (ctx: BotContext) => {
-  const helpMessage = `
-🏃‍♂️ Sport Tracker Bot Commands:
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
 
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-🏆 /leaderboard - View weekly leaderboard
-👨‍💼 /admin - Admin statistics (admin only)
-❓ /help - Show this help message
-
-The bot will guide you through logging workouts using easy-to-use buttons!
-  `;
-  
-  await ctx.reply(helpMessage.trim(), {
+  await ctx.reply(t(ctx.user.language, 'commands.help'), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: t(ctx.user.language, 'buttons.addWorkout'), callback_data: 'add_workout' }],
+        [{ text: t(ctx.user.language, 'buttons.myStats'), callback_data: 'my_stats' }],
+        [{ text: t(ctx.user.language, 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+        [{ text: t(ctx.user.language, 'buttons.changeLanguage'), callback_data: 'change_language' }]
       ]
     }
   });
@@ -526,6 +587,23 @@ bot.action('home', async (ctx: BotContext) => {
   await showHome(ctx);
 });
 
+// Handle "Change Language" button click
+bot.action('change_language', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  await ctx.editMessageText(t(ctx.user.language, 'language.selectLanguage'), {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+        [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
+      ]
+    }
+  });
+});
+
 // Admin command for bot statistics
 bot.command('admin', async (ctx: BotContext) => {
   console.log('Admin command triggered by user:', ctx.user?.telegramId);
@@ -675,14 +753,21 @@ async function showAdminStats(ctx: BotContext) {
 }
 
 async function showHome(ctx: BotContext) {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
   const welcomeMessage = `
-🏃‍♂️ Welcome to Sport Tracker Bot!
+${t(ctx.user.language, 'welcome.title')}
 
-Track your workouts easily with inline buttons. Here's what you can do:
+${t(ctx.user.language, 'welcome.description')}
 
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-❓ /help - Show this help message
+📊 /stats - ${t(ctx.user.language, 'commands.stats')}
+📋 /history - ${t(ctx.user.language, 'commands.history')}
+🏆 /leaderboard - ${t(ctx.user.language, 'commands.leaderboard')}
+🌐 /language - ${t(ctx.user.language, 'buttons.changeLanguage')}
+❓ /help - ${t(ctx.user.language, 'commands.help')}
 
 Let's get started! Use the "Add Workout" button below to record your first workout.
   `;
@@ -690,9 +775,10 @@ Let's get started! Use the "Add Workout" button below to record your first worko
   await ctx.editMessageText(welcomeMessage.trim(), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: t(ctx.user.language, 'buttons.addWorkout'), callback_data: 'add_workout' }],
+        [{ text: t(ctx.user.language, 'buttons.myStats'), callback_data: 'my_stats' }],
+        [{ text: t(ctx.user.language, 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+        [{ text: t(ctx.user.language, 'buttons.changeLanguage'), callback_data: 'change_language' }]
       ]
     }
   });

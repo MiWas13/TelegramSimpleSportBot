@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Telegraf } from 'telegraf';
 import { PrismaClient } from '@prisma/client';
+import { t, Language } from '../src/locales';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -14,6 +15,7 @@ interface BotContext {
     id: string;
     telegramId: string;
     name?: string;
+    language: Language;
   };
   session?: {
     selectedWorkoutType?: string;
@@ -45,7 +47,8 @@ bot.use(async (ctx: any, next) => {
     ctx.user = {
       id: user.id,
       telegramId: user.telegramId,
-      name: user.name || undefined
+      name: user.name || undefined,
+      language: user.language as Language
     };
     
     // Get session
@@ -58,27 +61,91 @@ bot.use(async (ctx: any, next) => {
 
 // Start command
 bot.start(async (ctx: any) => {
-  const welcomeMessage = `
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  // If user hasn't set language yet, show language selection
+  if (!ctx.user.language || ctx.user.language === 'en') {
+    const welcomeMessage = `
 🏃‍♂️ Welcome to Sport Tracker Bot!
 
-Track your workouts easily with inline buttons. Here's what you can do:
-
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-❓ /help - Show this help message
-
-Let's get started! Use the "Add Workout" button below to record your first workout.
+Track your workouts easily with inline buttons. Choose your language:
   `;
-  
-  await ctx.reply(welcomeMessage.trim(), {
+    
+    await ctx.reply(welcomeMessage.trim(), {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+          [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
+        ]
+      }
+    });
+  } else {
+    // User has language set, show normal welcome
+    await showHome(ctx);
+  }
+});
+
+// Language command
+bot.command('language', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  await ctx.reply(t(ctx.user.language, 'language.selectLanguage'), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+        [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
       ]
     }
   });
+});
+
+// Language selection handlers
+bot.action('language_en', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: ctx.user.id },
+      data: { language: 'en' }
+    });
+
+    ctx.user.language = 'en';
+    await ctx.editMessageText(t('en', 'language.changed'));
+    await showHome(ctx);
+  } catch (error) {
+    console.error('Error updating language:', error);
+    await ctx.reply('❌ Error updating language. Please try again.');
+  }
+});
+
+bot.action('language_ru', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: ctx.user.id },
+      data: { language: 'ru' }
+    });
+
+    ctx.user.language = 'ru';
+    await ctx.editMessageText(t('ru', 'language.changed'));
+    await showHome(ctx);
+  } catch (error) {
+    console.error('Error updating language:', error);
+    await ctx.reply('❌ Error updating language. Please try again.');
+  }
 });
 
 // Help command
