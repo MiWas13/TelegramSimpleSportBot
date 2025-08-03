@@ -66,26 +66,8 @@ bot.start(async (ctx: any) => {
     return;
   }
 
-  // If user hasn't set language yet, show language selection
-  if (!ctx.user.language || ctx.user.language === 'en') {
-    const welcomeMessage = `
-🏃‍♂️ Welcome to Sport Tracker Bot!
-
-Track your workouts easily with inline buttons. Choose your language:
-  `;
-    
-    await ctx.reply(welcomeMessage.trim(), {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🇺🇸 English', callback_data: 'language_en' }],
-          [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
-        ]
-      }
-    });
-  } else {
-    // User has language set, show normal welcome
-    await showHome(ctx);
-  }
+  // Always show the main menu, but in the user's language
+  await showHome(ctx);
 });
 
 // Language command
@@ -120,7 +102,18 @@ bot.action('language_en', async (ctx: any) => {
 
     ctx.user.language = 'en';
     await ctx.editMessageText(t('en', 'language.changed'));
-    await showHome(ctx);
+    
+    // Send a new message instead of editing
+    await ctx.reply(t('en', 'welcome.title'), {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t('en', 'buttons.addWorkout'), callback_data: 'add_workout' }],
+          [{ text: t('en', 'buttons.myStats'), callback_data: 'my_stats' }],
+          [{ text: t('en', 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+          [{ text: t('en', 'buttons.changeLanguage'), callback_data: 'change_language' }]
+        ]
+      }
+    });
   } catch (error) {
     console.error('Error updating language:', error);
     await ctx.reply('❌ Error updating language. Please try again.');
@@ -141,7 +134,18 @@ bot.action('language_ru', async (ctx: any) => {
 
     ctx.user.language = 'ru';
     await ctx.editMessageText(t('ru', 'language.changed'));
-    await showHome(ctx);
+    
+    // Send a new message instead of editing
+    await ctx.reply(t('ru', 'welcome.title'), {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t('ru', 'buttons.addWorkout'), callback_data: 'add_workout' }],
+          [{ text: t('ru', 'buttons.myStats'), callback_data: 'my_stats' }],
+          [{ text: t('ru', 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+          [{ text: t('ru', 'buttons.changeLanguage'), callback_data: 'change_language' }]
+        ]
+      }
+    });
   } catch (error) {
     console.error('Error updating language:', error);
     await ctx.reply('❌ Error updating language. Please try again.');
