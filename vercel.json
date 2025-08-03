@@ -1,19 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/webhook.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/cron-weekly-summary.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/admin-stats.ts",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/api/webhook",
