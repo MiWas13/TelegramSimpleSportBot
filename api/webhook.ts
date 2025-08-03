@@ -61,12 +61,27 @@ bot.use(async (ctx: any, next) => {
 
 // Start command
 bot.start(async (ctx: any) => {
+  // Start command should always work, even for new users
   if (!ctx.user) {
-    await ctx.reply('❌ Error: User not found');
+    // If user not found, show language selection
+    const welcomeMessage = `
+🏃‍♂️ Welcome to Sport Tracker Bot!
+
+Track your workouts easily with inline buttons. Choose your language:
+  `;
+    
+    await ctx.reply(welcomeMessage.trim(), {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+          [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
+        ]
+      }
+    });
     return;
   }
 
-  // Always show the main menu, but in the user's language
+  // User exists, show the main menu in their language
   await showHome(ctx);
 });
 
@@ -154,24 +169,24 @@ bot.action('language_ru', async (ctx: any) => {
 
 // Help command
 bot.command('help', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
   const helpMessage = `
-🏃‍♂️ Sport Tracker Bot Commands:
+${t(ctx.user.language, 'welcome.title')}
 
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-🏆 /leaderboard - View weekly leaderboard
-👨‍💼 /admin - Admin statistics (admin only)
-❓ /help - Show this help message
-
-The bot will guide you through logging workouts using easy-to-use buttons!
+${t(ctx.user.language, 'commands.help')}
   `;
-  
+
   await ctx.reply(helpMessage.trim(), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: t(ctx.user.language, 'buttons.addWorkout'), callback_data: 'add_workout' }],
+        [{ text: t(ctx.user.language, 'buttons.myStats'), callback_data: 'my_stats' }],
+        [{ text: t(ctx.user.language, 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+        [{ text: t(ctx.user.language, 'buttons.changeLanguage'), callback_data: 'change_language' }]
       ]
     }
   });
@@ -203,19 +218,19 @@ The bot will guide you through logging workouts using easy-to-use buttons!
 // Handle "Add Workout" button click
 bot.action('add_workout', async (ctx: any) => {
   const workoutTypes = [
-    { text: '💪 Gym', callback_data: 'workout_type_GYM' },
-    { text: '🎾 Tennis', callback_data: 'workout_type_TENNIS' },
-    { text: '🏃‍♂️ Running', callback_data: 'workout_type_RUNNING' },
-    { text: '⚽ Football', callback_data: 'workout_type_FOOTBALL' },
-    { text: '🏀 Basketball', callback_data: 'workout_type_BASKETBALL' },
-    { text: '🧘‍♀️ Yoga', callback_data: 'workout_type_YOGA' },
-    { text: '🏊‍♂️ Swimming', callback_data: 'workout_type_SWIMMING' },
-    { text: '🚴‍♂️ Cycling', callback_data: 'workout_type_CYCLING' },
-    { text: '🏃‍♂️ Other', callback_data: 'workout_type_OTHER' },
+    { text: t(ctx.user.language, 'workoutTypes.GYM'), callback_data: 'workout_type_GYM' },
+    { text: t(ctx.user.language, 'workoutTypes.TENNIS'), callback_data: 'workout_type_TENNIS' },
+    { text: t(ctx.user.language, 'workoutTypes.RUNNING'), callback_data: 'workout_type_RUNNING' },
+    { text: t(ctx.user.language, 'workoutTypes.FOOTBALL'), callback_data: 'workout_type_FOOTBALL' },
+    { text: t(ctx.user.language, 'workoutTypes.BASKETBALL'), callback_data: 'workout_type_BASKETBALL' },
+    { text: t(ctx.user.language, 'workoutTypes.YOGA'), callback_data: 'workout_type_YOGA' },
+    { text: t(ctx.user.language, 'workoutTypes.SWIMMING'), callback_data: 'workout_type_SWIMMING' },
+    { text: t(ctx.user.language, 'workoutTypes.CYCLING'), callback_data: 'workout_type_CYCLING' },
+    { text: t(ctx.user.language, 'workoutTypes.OTHER'), callback_data: 'workout_type_OTHER' },
   ];
 
   await ctx.editMessageText(
-    '🏃‍♂️ Choose your workout type:',
+    t(ctx.user.language, 'workout.chooseType'),
     {
       reply_markup: {
         inline_keyboard: [
@@ -246,11 +261,11 @@ bot.action(/workout_type_(.+)/, async (ctx: any) => {
     { text: '45 min', callback_data: 'duration_45' },
     { text: '60 min', callback_data: 'duration_60' },
     { text: '90 min', callback_data: 'duration_90' },
-    { text: 'Custom', callback_data: 'duration_custom' },
+    { text: t(ctx.user.language, 'duration.custom'), callback_data: 'duration_custom' },
   ];
 
   await ctx.editMessageText(
-    `🏃‍♂️ ${workoutType.charAt(0).toUpperCase() + workoutType.slice(1).toLowerCase()} workout selected!\n\nHow long was your workout?`,
+    `🏃‍♂️ ${workoutType.charAt(0).toUpperCase() + workoutType.slice(1).toLowerCase()} ${t(ctx.user.language, 'workout.typeSelected')}\n\n${t(ctx.user.language, 'workout.howLong')}`,
     {
       reply_markup: {
         inline_keyboard: [
@@ -773,24 +788,32 @@ async function showAdminStats(ctx: any) {
 }
 
 async function showHome(ctx: any) {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
   const welcomeMessage = `
-🏃‍♂️ Welcome to Sport Tracker Bot!
+${t(ctx.user.language, 'welcome.title')}
 
-Track your workouts easily with inline buttons. Here's what you can do:
+${t(ctx.user.language, 'welcome.description')}
 
-📊 /stats - View your workout statistics
-📋 /history - View recent workouts
-❓ /help - Show this help message
+📊 /stats - ${t(ctx.user.language, 'commands.stats')}
+📋 /history - ${t(ctx.user.language, 'commands.history')}
+🏆 /leaderboard - ${t(ctx.user.language, 'commands.leaderboard')}
+🌐 /language - ${t(ctx.user.language, 'buttons.changeLanguage')}
+❓ /help - ${t(ctx.user.language, 'commands.help')}
 
 Let's get started! Use the "Add Workout" button below to record your first workout.
   `;
   
-  await ctx.editMessageText(welcomeMessage.trim(), {
+  await ctx.reply(welcomeMessage.trim(), {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
-        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
-        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+        [{ text: t(ctx.user.language, 'buttons.addWorkout'), callback_data: 'add_workout' }],
+        [{ text: t(ctx.user.language, 'buttons.myStats'), callback_data: 'my_stats' }],
+        [{ text: t(ctx.user.language, 'buttons.leaderboard'), callback_data: 'leaderboard' }],
+        [{ text: t(ctx.user.language, 'buttons.changeLanguage'), callback_data: 'change_language' }]
       ]
     }
   });
