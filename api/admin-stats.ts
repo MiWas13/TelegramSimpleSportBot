@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Admin user IDs (add your Telegram user ID here)
-const ADMIN_USER_IDS = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
+const ADMIN_USER_IDS = process.env['ADMIN_USER_IDS']?.split(',').map(id => id.trim()) || [];
 
 interface DatabaseStats {
   totalUsers: number;

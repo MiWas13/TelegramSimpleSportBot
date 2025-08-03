@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Initialize bot
-const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
+const bot = new Telegraf(process.env['TELEGRAM_BOT_TOKEN']!);
 
 // Extend context to include user data and session
 interface BotContext {
@@ -42,7 +42,11 @@ bot.use(async (ctx: any, next) => {
       });
     }
 
-    ctx.user = user;
+    ctx.user = {
+      id: user.id,
+      telegramId: user.telegramId,
+      name: user.name || undefined
+    };
     
     // Get session
     const sessionKey = `session_${id}`;
@@ -262,7 +266,7 @@ bot.on('text', async (ctx: any) => {
   const session = sessions.get(sessionKey) || {};
 
   if (session.waitingForCustomDuration) {
-    const durationText = ctx.message.text;
+    const durationText = (ctx.message as any)?.text;
     const duration = parseInt(durationText);
 
     if (isNaN(duration) || duration <= 0 || duration > 1440) {
@@ -505,7 +509,7 @@ async function showAdminStats(ctx: any) {
   }
 
   // Check if user is admin
-  const adminUserIds = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
+  const adminUserIds = process.env['ADMIN_USER_IDS']?.split(',').map(id => id.trim()) || [];
   const isAdmin = adminUserIds.includes(ctx.user.telegramId);
 
   if (!isAdmin) {

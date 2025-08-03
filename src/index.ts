@@ -9,7 +9,7 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 // Initialize bot
-const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
+const bot = new Telegraf(process.env['TELEGRAM_BOT_TOKEN']!);
 
 // Extend context to include user data and session
 interface BotContext extends Context {
@@ -21,6 +21,7 @@ interface BotContext extends Context {
   session?: {
     selectedWorkoutType?: string;
   };
+  match?: RegExpMatchArray;
 }
 
 // Simple in-memory session store (in production, use Redis or database)
@@ -45,7 +46,11 @@ bot.use(async (ctx: BotContext, next) => {
       });
     }
 
-    ctx.user = user;
+    ctx.user = {
+      id: user.id,
+      telegramId: user.telegramId,
+      name: user.name || undefined
+    };
     
     // Get session
     const sessionKey = `session_${id}`;
@@ -132,7 +137,7 @@ bot.action('add_workout', async (ctx: BotContext) => {
 });
 
 // Handle workout type selection
-bot.action(/workout_type_(.+)/, async (ctx: BotContext) => {
+bot.action(/workout_type_(.+)/, async (ctx: any) => {
   const workoutType = ctx.match[1];
   
   // Store selected workout type in session
@@ -167,8 +172,8 @@ bot.action(/workout_type_(.+)/, async (ctx: BotContext) => {
 });
 
 // Handle duration selection
-bot.action(/duration_(\d+)/, async (ctx: BotContext) => {
-  const duration = parseInt(ctx.match[1]);
+bot.action(/duration_(\d+)/, async (ctx: any) => {
+  const duration = parseInt(ctx.match?.[1] || '0');
   
   if (!ctx.user) {
     await ctx.editMessageText('❌ Error: Please try adding your workout again.');
@@ -265,7 +270,7 @@ bot.on('text', async (ctx: BotContext) => {
   const session = sessions.get(sessionKey) || {};
 
   if (session.waitingForCustomDuration) {
-    const durationText = ctx.message.text;
+    const durationText = (ctx.message as any)?.text;
     const duration = parseInt(durationText);
 
     if (isNaN(duration) || duration <= 0 || duration > 1440) {
@@ -508,7 +513,7 @@ async function showAdminStats(ctx: BotContext) {
   }
 
   // Check if user is admin
-  const adminUserIds = process.env.ADMIN_USER_IDS?.split(',').map(id => id.trim()) || [];
+  const adminUserIds = process.env['ADMIN_USER_IDS']?.split(',').map(id => id.trim()) || [];
   const isAdmin = adminUserIds.includes(ctx.user.telegramId);
 
   if (!isAdmin) {
