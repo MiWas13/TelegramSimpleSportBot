@@ -1,5 +1,19 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "api/webhook.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/cron-weekly-summary.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/admin-stats.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/api/webhook",
@@ -16,17 +30,6 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "api/webhook.ts": {
-      "maxDuration": 30
-    },
-    "api/cron-weekly-summary.ts": {
-      "maxDuration": 300
-    },
-    "api/admin-stats.ts": {
-      "maxDuration": 60
-    }
   },
   "crons": [
     {
