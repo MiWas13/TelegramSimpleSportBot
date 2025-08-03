@@ -52,7 +52,7 @@ bot.use(async (ctx: BotContext, next) => {
       id: user.id,
       telegramId: user.telegramId,
       name: user.name || undefined,
-      language: user.language as Language
+      language: (user as any).language as Language || 'en'
     };
     
     // Get session
@@ -119,7 +119,7 @@ bot.action('language_en', async (ctx: BotContext) => {
   try {
     await prisma.user.update({
       where: { id: ctx.user.id },
-      data: { language: 'en' }
+      data: { language: 'en' } as any
     });
 
     ctx.user.language = 'en';
@@ -140,7 +140,7 @@ bot.action('language_ru', async (ctx: BotContext) => {
   try {
     await prisma.user.update({
       where: { id: ctx.user.id },
-      data: { language: 'ru' }
+      data: { language: 'ru' } as any
     });
 
     ctx.user.language = 'ru';
@@ -427,6 +427,10 @@ bot.on('text', async (ctx: BotContext) => {
 
 // Stats command
 bot.command('stats', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showWeeklyStats(ctx);
 });
 
@@ -564,6 +568,10 @@ async function showWeeklyStats(ctx: BotContext) {
 
 // History command
 bot.command('history', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showWorkoutHistory(ctx);
 });
 
@@ -574,6 +582,10 @@ bot.action('view_history', async (ctx: BotContext) => {
 
 // Leaderboard command
 bot.command('leaderboard', async (ctx: BotContext) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showLeaderboard(ctx);
 });
 
@@ -606,7 +618,11 @@ bot.action('change_language', async (ctx: BotContext) => {
 
 // Admin command for bot statistics
 bot.command('admin', async (ctx: BotContext) => {
-  console.log('Admin command triggered by user:', ctx.user?.telegramId);
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+  console.log('Admin command triggered by user:', ctx.user.telegramId);
   console.log('Admin IDs from env:', process.env['ADMIN_USER_IDS']);
   await showAdminStats(ctx);
 });

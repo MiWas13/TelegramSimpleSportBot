@@ -48,7 +48,7 @@ bot.use(async (ctx: any, next) => {
       id: user.id,
       telegramId: user.telegramId,
       name: user.name || undefined,
-      language: user.language as Language
+      language: (user as any).language as Language || 'en'
     };
     
     // Get session
@@ -115,7 +115,7 @@ bot.action('language_en', async (ctx: any) => {
   try {
     await prisma.user.update({
       where: { id: ctx.user.id },
-      data: { language: 'en' }
+      data: { language: 'en' } as any
     });
 
     ctx.user.language = 'en';
@@ -136,7 +136,7 @@ bot.action('language_ru', async (ctx: any) => {
   try {
     await prisma.user.update({
       where: { id: ctx.user.id },
-      data: { language: 'ru' }
+      data: { language: 'ru' } as any
     });
 
     ctx.user.language = 'ru';
@@ -429,6 +429,10 @@ bot.on('text', async (ctx: any) => {
 
 // Stats command
 bot.command('stats', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showWeeklyStats(ctx);
 });
 
@@ -566,6 +570,10 @@ async function showWeeklyStats(ctx: any) {
 
 // History command
 bot.command('history', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showWorkoutHistory(ctx);
 });
 
@@ -576,6 +584,10 @@ bot.action('view_history', async (ctx: any) => {
 
 // Leaderboard command
 bot.command('leaderboard', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showLeaderboard(ctx);
 });
 
@@ -589,8 +601,29 @@ bot.action('home', async (ctx: any) => {
   await showHome(ctx);
 });
 
+// Handle "Change Language" button click
+bot.action('change_language', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
+  await ctx.editMessageText(t(ctx.user.language, 'language.selectLanguage'), {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🇺🇸 English', callback_data: 'language_en' }],
+        [{ text: '🇷🇺 Русский', callback_data: 'language_ru' }]
+      ]
+    }
+  });
+});
+
 // Admin command for bot statistics
 bot.command('admin', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
   await showAdminStats(ctx);
 });
 
