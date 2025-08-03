@@ -82,6 +82,31 @@ Let's get started! Use the "Add Workout" button below to record your first worko
 });
 
 // Help command
+bot.command('help', async (ctx: any) => {
+  const helpMessage = `
+🏃‍♂️ Sport Tracker Bot Commands:
+
+📊 /stats - View your workout statistics
+📋 /history - View recent workouts
+🏆 /leaderboard - View weekly leaderboard
+👨‍💼 /admin - Admin statistics (admin only)
+❓ /help - Show this help message
+
+The bot will guide you through logging workouts using easy-to-use buttons!
+  `;
+  
+  await ctx.reply(helpMessage.trim(), {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '➕ Add Workout', callback_data: 'add_workout' }],
+        [{ text: '📈 My Stats', callback_data: 'my_stats' }],
+        [{ text: '🏆 Leaderboard', callback_data: 'leaderboard' }]
+      ]
+    }
+  });
+});
+
+// Also keep the help handler for /help command
 bot.help(async (ctx: any) => {
   const helpMessage = `
 🏃‍♂️ Sport Tracker Bot Commands:

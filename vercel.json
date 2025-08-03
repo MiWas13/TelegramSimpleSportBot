@@ -30,11 +30,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "crons": [
-    {
-      "path": "/api/cron-weekly-summary",
-      "schedule": "0 20 * * 0"
-    }
-  ]
+  }
 } 
