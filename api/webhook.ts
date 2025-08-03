@@ -217,6 +217,11 @@ The bot will guide you through logging workouts using easy-to-use buttons!
 
 // Handle "Add Workout" button click
 bot.action('add_workout', async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
   const workoutTypes = [
     { text: t(ctx.user.language, 'workoutTypes.GYM'), callback_data: 'workout_type_GYM' },
     { text: t(ctx.user.language, 'workoutTypes.TENNIS'), callback_data: 'workout_type_TENNIS' },
@@ -245,6 +250,11 @@ bot.action('add_workout', async (ctx: any) => {
 
 // Handle workout type selection
 bot.action(/workout_type_(.+)/, async (ctx: any) => {
+  if (!ctx.user) {
+    await ctx.reply('❌ Error: User not found');
+    return;
+  }
+
   const workoutType = ctx.match[1];
   
   // Store selected workout type in session
